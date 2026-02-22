@@ -1,0 +1,10 @@
+export { default as Navbar } from './layout/Navbar';
+export { default as Footer } from './layout/Footer';
+export { default as ThemeSwitcher } from './layout/ThemeSwitcher';
+export { default as HomePage } from './home/HomePage';
+export { default as HeroSection } from './home/HeroSection';
+export { default as FeaturedProducts } from './home/FeaturedProducts';
+export { default as CategoriesSection } from './home/CategoriesSection';
+export { default as FeaturesSection } from './home/FeaturesSection';
+export { default as PromoBanner } from './home/PromoBanner';
+export { default as TestimonialsSection } from './home/TestimonialsSection';
