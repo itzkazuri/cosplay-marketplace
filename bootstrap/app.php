@@ -1,11 +1,11 @@
 <?php
 
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -29,6 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'user' => \App\Http\Middleware\UserMiddleware::class,
+            'guest' => \Illuminate\Auth\Middleware\RedirectIfAuthenticated::class,
+            'require-auth' => \App\Http\Middleware\RedirectIfNotAuthenticated::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -113,7 +115,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             $status = 500;
-            
+
             return Inertia::render('Errors/Error', [
                 'status' => $status,
                 'message' => config('app.debug') ? $e->getMessage() : null,

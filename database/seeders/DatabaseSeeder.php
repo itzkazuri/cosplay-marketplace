@@ -55,5 +55,10 @@ class DatabaseSeeder extends Seeder
         foreach ($categories as $cat) {
             Category::create($cat);
         }
+
+        // Seed demo data (products, ratings, discounts, etc.)
+        $this->call([
+            DemoDataSeeder::class,
+        ]);
     }
 }

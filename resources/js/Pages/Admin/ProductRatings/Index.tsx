@@ -295,9 +295,9 @@ export default function Index({ products, statistics, filters }: Props) {
                                                 <td className="text-center">
                                                     {product.average_rating ? (
                                                         <div className="flex items-center justify-center gap-2">
-                                                            {renderStars(product.average_rating)}
+                                                            {renderStars(Number(product.average_rating))}
                                                             <span className="text-sm font-medium text-base-content">
-                                                                {product.average_rating.toFixed(1)}
+                                                                {Number(product.average_rating).toFixed(1)}
                                                             </span>
                                                         </div>
                                                     ) : (

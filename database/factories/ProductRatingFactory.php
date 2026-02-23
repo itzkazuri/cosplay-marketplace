@@ -21,12 +21,12 @@ class ProductRatingFactory extends Factory
     {
         return [
             'product_id' => Product::factory(),
-            'user_id' => User::factory(),
+            'user_id' => User::factory()->user(),
             'order_id' => null,
             'rating' => fake()->numberBetween(1, 5),
             'review' => fake()->optional(0.8)->paragraph(),
             'images' => null,
-            'is_verified_purchase' => false,
+            'is_verified_purchase' => fake()->boolean(30),
             'is_visible' => true,
             'helpful_count' => fake()->numberBetween(0, 50),
             'approved_at' => now(),
@@ -47,13 +47,15 @@ class ProductRatingFactory extends Factory
     /**
      * Indicate that the rating has images.
      */
-    public function withImages(): static
+    public function withImages(int $count = 2): static
     {
         return $this->state(fn (array $attributes) => [
-            'images' => [
+            'images' => fake()->randomElements([
                 'images/review1.jpg',
                 'images/review2.jpg',
-            ],
+                'images/review3.jpg',
+                'images/review4.jpg',
+            ], $count),
         ]);
     }
 
@@ -85,6 +87,38 @@ class ProductRatingFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'rating' => fake()->numberBetween(1, 2),
+        ]);
+    }
+
+    /**
+     * Indicate that the rating has a medium rating (3 stars).
+     */
+    public function mediumRating(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rating' => 3,
+        ]);
+    }
+
+    /**
+     * Indicate that the rating is approved.
+     */
+    public function approved(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_visible' => true,
+            'approved_at' => now(),
+        ]);
+    }
+
+    /**
+     * Indicate that the rating is pending approval.
+     */
+    public function pending(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_visible' => false,
+            'approved_at' => null,
         ]);
     }
 }

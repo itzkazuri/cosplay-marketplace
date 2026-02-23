@@ -1,5 +1,5 @@
 import { Link, usePage } from "@inertiajs/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     Menu,
     Search,
@@ -11,7 +11,9 @@ import {
     LogOut,
     LayoutDashboard,
     UserCircle,
-    Package
+    Package,
+    TrendingUp,
+    Star
 } from "lucide-react";
 import ThemeSwitcher from "./ThemeSwitcher";
 
@@ -36,17 +38,42 @@ interface NavbarProps {
     wishlistCount?: number;
 }
 
+interface SearchResultProduct {
+    id: number;
+    name: string;
+    slug: string;
+    category?: string | null;
+    categorySlug?: string | null;
+    image?: string | null;
+    price: number;
+    originalPrice?: number | null;
+    rating: number;
+    reviews: number;
+}
+
+interface SearchResponse {
+    products: SearchResultProduct[];
+    popularSearches: string[];
+    hasResults: boolean;
+}
+
 export default function Navbar({
     cartCount = 0,
     wishlistCount = 0,
 }: NavbarProps) {
     const { auth } = usePage().props as any;
     const user = auth.user;
-    
+
     const [mobileOpen, setMobileOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [categoryOpen, setCategoryOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+    const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         const onScroll = () => setScrolled(window.scrollY > 12);
@@ -62,6 +89,65 @@ export default function Navbar({
         window.addEventListener("resize", onResize);
         return () => window.removeEventListener("resize", onResize);
     }, []);
+
+    // Focus input when search opens
+    useEffect(() => {
+        if (searchOpen && searchInputRef.current) {
+            searchInputRef.current.focus();
+        }
+    }, [searchOpen]);
+
+    // Fetch search results with debounce
+    useEffect(() => {
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+
+        if (!searchOpen) {
+            setSearchResults(null);
+            return;
+        }
+
+        const searching = searchQuery.trim() !== "";
+        setIsSearching(searching);
+
+        debounceRef.current = setTimeout(() => {
+            setIsLoading(true);
+            fetch(`/api/products/search?q=${encodeURIComponent(searchQuery)}`)
+                .then((res) => res.json())
+                .then((data) => {
+                    setSearchResults(data);
+                    setIsLoading(false);
+                })
+                .catch(() => {
+                    setIsLoading(false);
+                });
+        }, 300);
+
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
+        };
+    }, [searchQuery, searchOpen]);
+
+    const handleSearchClose = () => {
+        setSearchOpen(false);
+        setSearchQuery("");
+        setSearchResults(null);
+    };
+
+    const handlePopularSearchClick = (term: string) => {
+        setSearchQuery(term);
+        setIsSearching(true);
+    };
+
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            window.location.href = `/products?search=${encodeURIComponent(searchQuery)}`;
+        }
+    };
 
     return (
         <>
@@ -393,47 +479,151 @@ export default function Navbar({
             {searchOpen && (
                 <div
                     className="fixed inset-0 z-[99] bg-base-content/20 backdrop-blur-sm flex items-start justify-center pt-24 px-4"
-                    onClick={() => setSearchOpen(false)}
+                    onClick={handleSearchClose}
                 >
                     <div
                         className="w-full max-w-xl bg-base-100 border border-base-300 rounded-2xl shadow-2xl overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
+                        style={{ maxHeight: '70vh' }}
                     >
-                        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-base-200">
-                            <Search className="w-5 h-5 text-base-content/40 shrink-0" />
-                            <input
-                                autoFocus
-                                type="text"
-                                placeholder="Cari kostum, wig, aksesoris..."
-                                className="flex-1 bg-transparent text-base outline-none placeholder:text-base-content/40"
-                            />
-                            <button
-                                onClick={() => setSearchOpen(false)}
-                                className="btn btn-ghost btn-xs btn-square"
-                            >
-                                <X className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
-                        <div className="px-4 py-3">
-                            <p className="text-xs font-semibold text-base-content/40 uppercase tracking-widest mb-2">
-                                Populer
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                {[
-                                    "Naruto",
-                                    "Demon Slayer",
-                                    "Genshin Impact",
-                                    "Wig Biru",
-                                    "Mahkota",
-                                ].map((tag) => (
+                        {/* Search Input */}
+                        <form onSubmit={handleSearchSubmit}>
+                            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-base-200">
+                                <Search className="w-5 h-5 text-base-content/40 shrink-0" />
+                                <input
+                                    ref={searchInputRef}
+                                    autoFocus
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Cari kostum, wig, aksesoris..."
+                                    className="flex-1 bg-transparent text-base outline-none placeholder:text-base-content/40"
+                                />
+                                {searchQuery && (
                                     <button
-                                        key={tag}
-                                        className="badge badge-ghost hover:badge-primary cursor-pointer transition-colors text-xs py-3 px-3"
+                                        type="button"
+                                        onClick={() => setSearchQuery("")}
+                                        className="btn btn-ghost btn-xs btn-square"
                                     >
-                                        {tag}
+                                        <X className="w-3.5 h-3.5" />
                                     </button>
-                                ))}
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={handleSearchClose}
+                                    className="btn btn-ghost btn-xs btn-square"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
                             </div>
+                        </form>
+
+                        {/* Search Results */}
+                        <div className="overflow-y-auto" style={{ maxHeight: 'calc(70vh - 70px)' }}>
+                            {/* Loading State */}
+                            {isLoading && (
+                                <div className="p-8 text-center">
+                                    <div className="loading loading-spinner loading-md text-primary"></div>
+                                    <p className="mt-2 text-sm text-base-content/70">Mencari...</p>
+                                </div>
+                            )}
+
+                            {/* Popular Searches (when query is empty) */}
+                            {!isSearching && !isLoading && searchResults?.popularSearches && searchResults.popularSearches.length > 0 && (
+                                <div className="px-4 py-3">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <TrendingUp className="w-4 h-4 text-primary" />
+                                        <p className="text-xs font-semibold text-base-content/60 uppercase tracking-widest">
+                                            Populer
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {searchResults.popularSearches.map((tag, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => handlePopularSearchClick(tag)}
+                                                className="badge badge-ghost hover:badge-primary cursor-pointer transition-colors text-xs py-3 px-3"
+                                            >
+                                                {tag}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Product Results (when searching) */}
+                            {isSearching && !isLoading && searchResults?.products && searchResults.products.length > 0 && (
+                                <div className="p-4">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <Package className="w-4 h-4 text-primary" />
+                                        <p className="text-xs font-semibold text-base-content/60 uppercase tracking-widest">
+                                            Produk Ditemukan
+                                        </p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {searchResults.products.map((product) => (
+                                            <Link
+                                                key={product.id}
+                                                href={`/products/${product.slug}`}
+                                                className="group card bg-base-200 hover:bg-base-300 transition-all duration-200 cursor-pointer"
+                                                onClick={handleSearchClose}
+                                            >
+                                                <figure className="aspect-square bg-gradient-to-br from-primary/10 to-accent/10 relative overflow-hidden rounded-lg">
+                                                    {product.image ? (
+                                                        <img
+                                                            src={product.image}
+                                                            alt={product.name}
+                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex items-center justify-center h-full text-base-content/30">
+                                                            <Package className="w-12 h-12" />
+                                                        </div>
+                                                    )}
+                                                    {product.originalPrice && (
+                                                        <span className="absolute top-2 right-2 badge badge-error text-xs text-white">
+                                                            -{Math.round((1 - product.price / product.originalPrice) * 100)}%
+                                                        </span>
+                                                    )}
+                                                </figure>
+                                                <div className="card-body p-3">
+                                                    <h4 className="font-medium text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                                                        {product.name}
+                                                    </h4>
+                                                    <div className="flex items-center gap-1 text-xs text-base-content/70">
+                                                        <Star className="w-3 h-3 fill-warning text-warning" />
+                                                        <span>{product.rating}</span>
+                                                        <span>({product.reviews})</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-primary font-bold text-sm">
+                                                            Rp {product.price.toLocaleString('id-ID')}
+                                                        </span>
+                                                        {product.originalPrice && (
+                                                            <span className="text-xs text-base-content/50 line-through">
+                                                                Rp {product.originalPrice.toLocaleString('id-ID')}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* No Results */}
+                            {isSearching && !isLoading && searchResults?.products.length === 0 && (
+                                <div className="py-12 text-center px-4">
+                                    <Search className="w-12 h-12 mx-auto text-base-content/30 mb-4" />
+                                    <h3 className="font-semibold text-lg mb-2">
+                                        Tidak ada hasil untuk "{searchQuery}"
+                                    </h3>
+                                    <p className="text-base-content/70 text-sm">
+                                        Coba kata kunci lain seperti nama karakter atau anime
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -441,4 +631,3 @@ export default function Navbar({
         </>
     );
 }
-

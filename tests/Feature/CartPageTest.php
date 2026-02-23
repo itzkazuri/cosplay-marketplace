@@ -17,6 +17,13 @@ class CartPageTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_cart_page_redirects_to_login_when_not_authenticated(): void
+    {
+        $response = $this->get('/cart');
+
+        $response->assertRedirect(route('login'));
+    }
+
     public function test_cart_page_renders_for_user(): void
     {
         $user = User::query()->create([

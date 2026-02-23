@@ -1,16 +1,22 @@
 <?php
 
-use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CartController;
-use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Midtrans\NotificationController as MidtransNotification;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductDetailController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/categories/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
+Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+Route::get('/products/{slug}', [ProductDetailController::class, 'show'])->name('products.show');
+Route::get('/api/products/filter', [ProductController::class, 'filter'])->name('api.products.filter');
+Route::get('/api/products/search', [ProductController::class, 'search'])->name('api.products.search');
 
 Route::post('/midtrans/notification', MidtransNotification::class)->name('midtrans.notification');
 
@@ -22,6 +28,9 @@ Route::middleware(['auth', 'user'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+Route::middleware(['require-auth', 'user'])->group(function () {
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
     Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 });
@@ -30,11 +39,11 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategory;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboard;
 use App\Http\Controllers\Admin\OrderController as AdminOrder;
 use App\Http\Controllers\Admin\ProductController as AdminProduct;
-use App\Http\Controllers\Admin\PromoController as AdminPromo;
 use App\Http\Controllers\Admin\ProductSkuController as AdminProductSku;
-use App\Http\Controllers\Admin\ShipmentController as AdminShipment;
+use App\Http\Controllers\Admin\PromoController as AdminPromo;
 use App\Http\Controllers\Admin\RevenueController as AdminRevenue;
 use App\Http\Controllers\Admin\SettingsController as AdminSettings;
+use App\Http\Controllers\Admin\ShipmentController as AdminShipment;
 
 // Admin Routes
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {

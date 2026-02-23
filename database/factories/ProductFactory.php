@@ -32,4 +32,64 @@ class ProductFactory extends Factory
             'weight' => fake()->numberBetween(200, 2000),
         ];
     }
+
+    /**
+     * Indicate that the product is custom only.
+     */
+    public function custom(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_custom' => true,
+        ]);
+    }
+
+    /**
+     * Indicate that the product is inactive.
+     */
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_active' => false,
+        ]);
+    }
+
+    /**
+     * Indicate that the product has a discount.
+     */
+    public function withDiscount(): static
+    {
+        return $this->afterCreating(function ($product) {
+            \App\Models\ProductDiscount::factory()->create([
+                'product_id' => $product->id,
+            ]);
+        });
+    }
+
+    /**
+     * Indicate that the product has ratings.
+     */
+    public function withRatings(int $count = 5): static
+    {
+        return $this->afterCreating(function ($product) use ($count) {
+            \App\Models\ProductRating::factory()
+                ->count($count)
+                ->create([
+                    'product_id' => $product->id,
+                ]);
+        });
+    }
+
+    /**
+     * Indicate that the product has SKUs.
+     */
+    public function withSkus(int $count = 3): static
+    {
+        return $this->afterCreating(function ($product) use ($count) {
+            \App\Models\ProductSku::factory()
+                ->count($count)
+                ->create([
+                    'product_id' => $product->id,
+                ]);
+        });
+    }
 }

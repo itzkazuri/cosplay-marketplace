@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Models\RevenueReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -204,6 +203,7 @@ class RevenueController extends Controller
         for ($month = 1; $month <= 12; $month++) {
             $months[] = $this->calculateMonthlyRevenue($year, $month);
         }
+
         return $months;
     }
 
@@ -214,13 +214,15 @@ class RevenueController extends Controller
     {
         $years = [];
         $currentYear = now()->year;
-        
+
         // Get data for last 5 years
         for ($year = $currentYear - 4; $year <= $currentYear; $year++) {
-            if ($year < 2000) continue;
+            if ($year < 2000) {
+                continue;
+            }
             $years[] = $this->calculateYearlyRevenue($year);
         }
-        
+
         return $years;
     }
 
@@ -238,7 +240,7 @@ class RevenueController extends Controller
             ->groupBy('day')
             ->orderBy('day')
             ->get()
-            ->map(fn($item) => [
+            ->map(fn ($item) => [
                 'day' => $item->day,
                 'revenue' => (float) $item->revenue,
                 'revenue_formatted' => number_format($item->revenue, 0, ',', '.'),
@@ -261,7 +263,7 @@ class RevenueController extends Controller
             ->groupBy('month')
             ->orderBy('month')
             ->get()
-            ->map(fn($item) => [
+            ->map(fn ($item) => [
                 'month' => $item->month,
                 'month_name' => date('F', mktime(0, 0, 0, $item->month, 1)),
                 'revenue' => (float) $item->revenue,
@@ -288,18 +290,18 @@ class RevenueController extends Controller
         }
 
         return $query->select(
-                'products.id',
-                'products.name',
-                'products.slug',
-                'products.main_image',
-                DB::raw('SUM(order_items.quantity) as total_sold'),
-                DB::raw('SUM(order_items.subtotal) as total_revenue')
-            )
+            'products.id',
+            'products.name',
+            'products.slug',
+            'products.main_image',
+            DB::raw('SUM(order_items.quantity) as total_sold'),
+            DB::raw('SUM(order_items.subtotal) as total_revenue')
+        )
             ->groupBy('products.id', 'products.name', 'products.slug', 'products.main_image')
             ->orderByDesc('total_sold')
             ->limit(10)
             ->get()
-            ->map(fn($item) => [
+            ->map(fn ($item) => [
                 'id' => $item->id,
                 'name' => $item->name,
                 'slug' => $item->slug,
@@ -326,14 +328,14 @@ class RevenueController extends Controller
         }
 
         return $query->select(
-                'payments.payment_type',
-                DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(payments.amount) as total')
-            )
+            'payments.payment_type',
+            DB::raw('COUNT(*) as count'),
+            DB::raw('SUM(payments.amount) as total')
+        )
             ->groupBy('payments.payment_type')
             ->orderByDesc('total')
             ->get()
-            ->map(fn($item) => [
+            ->map(fn ($item) => [
                 'payment_type' => $item->payment_type,
                 'payment_type_label' => $this->getPaymentTypeLabel($item->payment_type),
                 'count' => $item->count,

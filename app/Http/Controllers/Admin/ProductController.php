@@ -299,13 +299,13 @@ class ProductController extends Controller
             $query->select('product_id', DB::raw('AVG(rating) as average_rating'), DB::raw('COUNT(*) as total_ratings'))
                 ->groupBy('product_id');
         }])
-        ->withCount(['ratings as total_ratings_count' => function ($query) {
-            $query->where('is_visible', true);
-        }])
-        ->withAvg(['ratings as average_rating' => function ($query) {
-            $query->where('is_visible', true);
-        }], 'rating')
-        ->latest();
+            ->withCount(['ratings as total_ratings_count' => function ($query) {
+                $query->where('is_visible', true);
+            }])
+            ->withAvg(['ratings as average_rating' => function ($query) {
+                $query->where('is_visible', true);
+            }], 'rating')
+            ->latest();
 
         // Search by product name
         if ($request->filled('search')) {
@@ -314,7 +314,10 @@ class ProductController extends Controller
 
         // Filter by minimum rating
         if ($request->filled('min_rating')) {
-            $productsQuery->havingRaw('AVG(CASE WHEN ratings.is_visible = 1 THEN ratings.rating END) >= ?', [$request->min_rating]);
+            $productsQuery->whereRaw(
+                '(select avg(product_ratings.rating) from product_ratings where product_ratings.product_id = products.id and product_ratings.is_visible = 1) >= ?',
+                [(float) $request->min_rating]
+            );
         }
 
         $products = $productsQuery->paginate(15)->withQueryString();
