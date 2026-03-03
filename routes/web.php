@@ -3,7 +3,6 @@
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\Midtrans\NotificationController as MidtransNotification;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductDetailController;
 use App\Http\Controllers\ProfileController;
@@ -17,8 +16,6 @@ Route::get('/products', [ProductController::class, 'index'])->name('products.ind
 Route::get('/products/{slug}', [ProductDetailController::class, 'show'])->name('products.show');
 Route::get('/api/products/filter', [ProductController::class, 'filter'])->name('api.products.filter');
 Route::get('/api/products/search', [ProductController::class, 'search'])->name('api.products.search');
-
-Route::post('/midtrans/notification', MidtransNotification::class)->name('midtrans.notification');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
